@@ -1,15 +1,17 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
-import { resolve, join } from 'node:path';
+import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
+import { dirname, join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
+const scriptDirectory = dirname(fileURLToPath(import.meta.url));
+const sourcePath = join(scriptDirectory, 'entry.png');
 const outputDirectory = resolve(process.env.MAKEFUN_OUTPUT_DIR ?? '/output');
-const imageBytes = await readFile('./entry.png');
+const destinationPath = join(outputDirectory, 'entry.png');
+
+const sourceBytes = await readFile(sourcePath);
 await mkdir(outputDirectory, { recursive: true });
-const destination = join(outputDirectory, 'entry.png');
-await writeFile(destination, imageBytes);
-const writtenBytes = await readFile(destination);
-if (writtenBytes.byteLength !== imageBytes.byteLength) {
-  throw new Error(
-    `Output byte length mismatch: expected ${imageBytes.byteLength}, got ${writtenBytes.byteLength}`,
-  );
+await writeFile(destinationPath, sourceBytes);
+const writtenLength = (await stat(destinationPath)).size;
+if (writtenLength !== sourceBytes.byteLength) {
+  throw new Error(`Output length mismatch: expected ${sourceBytes.byteLength}, got ${writtenLength}`);
 }
-console.log(`Wrote ${imageBytes.byteLength} bytes to ${destination}`);
+console.log(`Wrote ${writtenLength} bytes to ${destinationPath}`);
